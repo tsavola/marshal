@@ -24,12 +24,14 @@ func Marshal(x any, types *Types, ignoreUnsupportedTypes bool) ([]any, error) {
 		refs:   make(map[unsafe.Pointer]int),
 	}
 
-	if err := pan.Recover(func() {
-		if _, ok := m.marshal(v, true); !ok {
-			pan.Panic(errors.New("marshal: type not supported"))
-		}
-	}); err != nil {
+	_, ok, err := pan.Recover2(z, func() (any, bool) {
+		return m.marshal(v, true)
+	})
+	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return nil, errors.New("marshal: type not supported")
 	}
 
 	return m.objects, nil
@@ -105,7 +107,7 @@ func (m *marshaler) marshal(v reflect.Value, init bool) (any, bool) {
 		keyType := v.Type().Key()
 		if !isMapKeyTypeSupported(keyType) {
 			if m.strict {
-				pan.Panic(fmt.Errorf("marshal: type not supported: %s", v.Type()))
+				z.Panic(fmt.Errorf("marshal: type not supported: %s", v.Type()))
 			}
 			return nil, false
 		}
@@ -135,7 +137,7 @@ func (m *marshaler) marshal(v reflect.Value, init bool) (any, bool) {
 
 		name, found := m.types.typeNames[t]
 		if !found {
-			pan.Panic(fmt.Errorf("marshal: type not registered: %s", t))
+			z.Panic(fmt.Errorf("marshal: type not registered: %s", t))
 		}
 
 		x, ok := m.marshal(v, false)
@@ -169,7 +171,7 @@ func (m *marshaler) marshal(v reflect.Value, init bool) (any, bool) {
 
 	default:
 		if m.strict {
-			pan.Panic(fmt.Errorf("marshal: type not supported: %s", v.Type()))
+			z.Panic(fmt.Errorf("marshal: type not supported: %s", v.Type()))
 		}
 		return nil, false
 	}

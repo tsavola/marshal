@@ -8,10 +8,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-
-	"import.name/pan"
-
-	. "import.name/pan/mustcheck"
 )
 
 func Unmarshal(sources []any, ptr any, types *Types) error {
@@ -32,7 +28,7 @@ func Unmarshal(sources []any, ptr any, types *Types) error {
 	src := reflect.ValueOf(u.sources[0])
 	dest := reflect.ValueOf(ptr).Elem()
 
-	return pan.Recover(func() {
+	return z.Recover(func() {
 		u.unmarshal(src, dest)
 	})
 }
@@ -146,7 +142,7 @@ func (u *unmarshaler) unmarshal(src, dest reflect.Value) {
 		typeName := iter.Key().String()
 		t, found := u.types.nameTypes[typeName]
 		if !found {
-			pan.Panic(fmt.Errorf("unmarshal: type name not registered: %q", typeName))
+			z.Panic(fmt.Errorf("unmarshal: type name not registered: %q", typeName))
 		}
 
 		tmp := reflect.New(t)
@@ -175,7 +171,7 @@ func (u *unmarshaler) unmarshal(src, dest reflect.Value) {
 			}
 
 		case reflect.String:
-			index = Must(strconv.ParseUint(src.String(), 0, 64))
+			index = must(strconv.ParseUint(src.String(), 0, 64))
 
 		case reflect.Interface:
 			if src.IsNil() {
@@ -202,6 +198,6 @@ func (u *unmarshaler) unmarshal(src, dest reflect.Value) {
 		u.unmarshal(reflect.ValueOf(u.sources[index]), ptr.Elem())
 
 	default:
-		pan.Panic(fmt.Errorf("unmarshal: target type not supported: %s", dest.Type()))
+		z.Panic(fmt.Errorf("unmarshal: target type not supported: %s", dest.Type()))
 	}
 }
